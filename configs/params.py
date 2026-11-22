@@ -1,23 +1,38 @@
 from dataclasses import dataclass
-
 @dataclass
 class Params:
-    L: int = 30            # lado da grade (toroidal)
-    K: int = 5             # nº de corretores
-    r_s: int = 3           # raio de supervisão (distância de Chebyshev)
-    P: float = 0.65        # pressão operacional, em [0, 1]
-    b0: float = -3.0       # propensão basal ao erro (complexidade/esquecimento)
-    bP: float = 3.0        # peso da pressão
-    bD: float = 4.0        # peso do contágio (desordem visível)
-    bS: float = 2.0        # peso da supervisão
-    bM: float = 3.0        # peso da moral
-    eta_S: float = 0.02    # ganho de moral por estar supervisionado
-    eta_D: float = 0.02    # perda de moral por ver desordem
-    eta_R: float = 0.02    # retorno da moral ao valor pessoal (valores de cada um)
-    rho0: float = 0.30     # limpeza rotineira (prob. por passo, qualquer célula)
-    rho: float = 0.5       # limpeza pelos corretores (prob. por passo, no raio r_s)
-    m0: float = 0.5        # moral inicial média
-    m_sd: float = 0.2      # dispersão da moral inicial (heterogeneidade)
-    dirigido: bool = True  # corretores vão à desordem (True) ou andam ao acaso (False)
-    T: int = 300           # nº de passos
+    """Parâmetros do modelo (valores base da Tabela de parâmetros do artigo)."""
+    # ambiente e agentes
+    L: int = 30              # lado da grade (toroidal)
+    N_T: int = 120           # nº de trabalhadores
+    K: int = 8               # nº de corretores
+    r_s: int = 3             # raio de supervisão (distância de Chebyshev)
+    T: int = 600             # passos de tempo
     seed: int = 0
+    init: float = 0.0        # fração inicial de células com resíduo
+
+    # pressão e moral (exógenas e constantes em cada execução)
+    P: float = 0.5
+    M_bar: float = 0.5       # moral média
+    M_sd: float = 0.25       # dispersão da moral entre agentes
+
+    # probabilidade de erro: sigma(b + bP*P + bD*D - bS*S - bM*M)
+    bT: float = -2.0         # intercepto, trabalhadores
+    bA: float = -3.0         # intercepto, corretores
+    bPT: float = 1.2
+    bPA: float = 0.6
+    bDT: float = 1.4
+    bDA: float = 1.4
+    bST: float = 1.0         # supervisão (só trabalhadores)
+    bMT: float = 2.0
+    bMA: float = 2.0
+
+    # probabilidade de correção: sigma(c + gamma*M)
+    cT: float = -1.5
+    cA: float = 1.0
+    gT: float = 3.0
+    gA: float = 2.0
+
+    # movimento dos corretores: "aleatoria", "reativa" ou "cobertura"
+    politica: str = "aleatoria"
+    eps: float = 0.1         # prob. de ignorar a política e andar ao acaso

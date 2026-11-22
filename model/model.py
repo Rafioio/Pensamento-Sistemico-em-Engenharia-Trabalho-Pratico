@@ -8,11 +8,18 @@ from configs.params import Params
 from configs.paths import *
 
 
-BASE = Params()          # cenário base (valores em abm_desvios.py)
+BASE = Params()          # cenário base (valores em configs/params.py)
 SEMENTES = range(10)     # repetições do cenário base
 JANELA_FINAL = 50        # a "desordem final" é a média dos últimos passos
 
-import numpy as np
+POLITICAS = (("aleatoria", "corretores aleatórios"),
+             ("reativa", "corretores dirigidos à desordem"),
+             ("cobertura", "corretores de cobertura"))
+OFFS = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
+
+
+def sig(x):
+    return 1 / (1 + np.exp(-x))
 
 
 def janela(a, r):
@@ -25,60 +32,83 @@ def janela(a, r):
 
 
 def simular(par: Params, P_t=None):
-    """Roda uma simulação. P_t(t) opcional faz a pressão variar no tempo.
+    """Roda uma simulação do modelo do artigo. P_t(t) opcional faz a pressão variar no tempo.
+
+    Os N_T primeiros agentes são trabalhadores e os K últimos são corretores.
     Retorna dict com séries temporais e o estado final."""
     rng = np.random.default_rng(par.seed)
-    L = par.L
-    waste = np.zeros((L, L))                                   # 1 = há resíduo
-    m_base = np.clip(rng.normal(par.m0, par.m_sd, (L, L)), 0, 1)  # moral "de fábrica"
-    m = m_base.copy()                                          # moral atual
-    pos = rng.integers(0, L, size=(par.K, 2))                  # posição dos corretores
-    desordem, erro, moral, prejuizo = [], [], [], []
+    L, NT, K = par.L, par.N_T, par.K
+    N = NT + K
+    eh_corretor = np.arange(N) >= NT
+
+    waste = (rng.random((L, L)) < par.init).astype(float)      # 1 = há resíduo
+    celulas = rng.choice(L * L, N, replace=False)              # posições iniciais sem sobreposição
+    pos = np.column_stack((celulas // L, celulas % L))
+    ocupada = np.zeros((L, L), bool)
+    ocupada[pos[:, 0], pos[:, 1]] = True
+
+    # moral individual, fixa; probabilidade de correção (constante no tempo)
+    M = np.clip(rng.normal(par.M_bar, par.M_sd, N), 0, 1)
+    p_corr = np.where(eh_corretor, sig(par.cA + par.gA * M), sig(par.cT + par.gT * M))
+
+    desordem, erro, prejuizo = [], [], []
 
     for t in range(par.T):
         P = par.P if P_t is None else P_t(t)
+        xs, ys = pos[:, 0], pos[:, 1]
 
-        # --- percepção: desordem visível D e supervisão S de cada trabalhador
-        D = (janela(waste, 1) - waste) / 8                     # fração de vizinhos com resíduo
-        S = np.zeros((L, L))
-        for x, y in pos:
+        # --- 1. percepção: D (vizinhança de Moore, sem a célula própria) e S (corretor a <= r_s)
+        D = ((janela(waste, 1) - waste) / 8)[xs, ys]
+        Sg = np.zeros((L, L))
+        for x, y in pos[NT:]:
             idx = np.ix_((x + np.arange(-par.r_s, par.r_s + 1)) % L,
                          (y + np.arange(-par.r_s, par.r_s + 1)) % L)
-            S[idx] = 1
+            Sg[idx] = 1
+        S = Sg[xs, ys]
 
-        # --- decisão do trabalhador (Eq. 1)
-        z = par.b0 + par.bP * P + par.bD * D - par.bS * S - par.bM * m
-        err = rng.random((L, L)) < 1 / (1 + np.exp(-z))
-        waste = np.maximum(waste, err)
+        # --- 2. erro e 3. correção, com o estado do início do passo
+        z = np.where(eh_corretor,
+                     par.bA + par.bPA * P + par.bDA * D - par.bMA * M,
+                     par.bT + par.bPT * P + par.bDT * D - par.bST * S - par.bMT * M)
+        err = rng.random(N) < sig(z)
+        corrige = rng.random(N) < p_corr
+        w0 = waste[xs, ys]
+        waste[xs, ys] = np.where(err, 1.0, np.where((w0 == 1) & corrige, 0.0, w0))
 
-        # --- limpeza: rotineira em todo lugar, mais forte sob supervisão
-        limpa = rng.random((L, L)) < np.where(S == 1, par.rho, par.rho0)
-        waste = np.where(limpa, 0, waste)
-
-        # --- evolução da moral
-        m = np.clip(m + par.eta_S * S - par.eta_D * D + par.eta_R * (m_base - m), 0, 1)
-
-        # --- movimento dos corretores
-        if par.K > 0:
-            if par.dirigido:
-                alvo = janela(waste, par.r_s)
-            for i in range(par.K):
-                cand = [((pos[i, 0] + dx) % L, (pos[i, 1] + dy) % L)
-                        for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
-                if par.dirigido:
-                    pont = [alvo[c] + rng.random() * 0.5 for c in cand]  # desempate aleatório
-                    pos[i] = cand[int(np.argmax(pont))]
-                else:
-                    pos[i] = cand[rng.integers(len(cand))]
+        # --- 4. movimento sequencial, em ordem aleatória
+        alvo = janela(waste, par.r_s) if (K > 0 and par.politica == "reativa") else None
+        for i in rng.permutation(N):
+            x, y = pos[i]
+            cand = [((x + dx) % L, (y + dy) % L) for dx, dy in OFFS]
+            cand = [c for c in cand if c == (x, y) or not ocupada[c]]
+            if len(cand) == 1:
+                continue
+            if (not eh_corretor[i] or par.politica == "aleatoria" or K < 2
+                    or rng.random() < par.eps):
+                novo = cand[rng.integers(len(cand))]
+            else:
+                if par.politica == "reativa":
+                    pont = np.array([alvo[c] for c in cand])
+                else:  # cobertura: maximiza a distância de Chebyshev ao corretor mais próximo
+                    outros = np.delete(pos[NT:], i - NT, axis=0)
+                    pont = []
+                    for cx, cy in cand:
+                        ddx = np.abs(outros[:, 0] - cx); ddx = np.minimum(ddx, L - ddx)
+                        ddy = np.abs(outros[:, 1] - cy); ddy = np.minimum(ddy, L - ddy)
+                        pont.append(np.maximum(ddx, ddy).min())
+                    pont = np.array(pont)
+                melhores = np.flatnonzero(pont == pont.max())
+                novo = cand[rng.choice(melhores)]
+            ocupada[x, y] = False
+            ocupada[novo] = True
+            pos[i] = novo
 
         desordem.append(waste.mean())
-        erro.append(err.mean())
-        moral.append(m.mean())
+        erro.append(err[:NT].mean())
         prejuizo.append(waste.sum())
 
     return dict(desordem=np.array(desordem), erro=np.array(erro),
-                moral=np.array(moral), prejuizo=np.array(prejuizo),
-                waste=waste, pos=pos, m=m)
+                prejuizo=np.array(prejuizo), waste=waste, pos=pos[NT:].copy(), M=M)
 
 def rodar(par, n=3, P_t=None):
     """Roda n sementes e devolve a matriz (n, T) da fração de células com resíduo."""
@@ -100,7 +130,7 @@ def fig_cenario_base():
     runs = [simular(replace(BASE, seed=s)) for s in SEMENTES]
     fig, ax = plt.subplots(1, 2, figsize=(10, 3.6), gridspec_kw={"width_ratios": [1.6, 1]})
     banda(ax[0], np.array([r["desordem"] for r in runs]), "desordem (células com resíduo)")
-    banda(ax[0], np.array([r["erro"] for r in runs]), "taxa de erro por passo")
+    banda(ax[0], np.array([r["erro"] for r in runs]), "taxa de erro dos trabalhadores")
     ax[0].set(xlabel="passo de tempo", ylabel="fração", title="Cenário base (média ± desvio, 10 sementes)")
     ax[0].legend()
     r = runs[0]
@@ -120,13 +150,14 @@ def fig_extremos():
         "sem corretores (K=0)": replace(BASE, K=0),
         "pressão mínima (P=0)": replace(BASE, P=0.0),
         "pressão máxima (P=1)": replace(BASE, P=1.0),
-        "moral nula": replace(BASE, m0=0.0, m_sd=0.0),
-        "moral máxima": replace(BASE, m0=1.0, m_sd=0.0),
+        "moral nula": replace(BASE, M_bar=0.0, M_sd=0.0),
+        "moral máxima": replace(BASE, M_bar=1.0, M_sd=0.0),
     }
     fig, ax = plt.subplots(figsize=(7, 4))
     for nome, par in casos.items():
-        banda(ax, rodar(par, 5), nome)
-        print(f"Extremo {nome}: desordem final = {rodar(par, 5)[:, -JANELA_FINAL:].mean():.3f}")
+        y = rodar(par, 5)
+        banda(ax, y, nome)
+        print(f"Extremo {nome}: desordem final = {y[:, -JANELA_FINAL:].mean():.3f}")
     ax.set(xlabel="passo de tempo", ylabel="fração de células com resíduo", title="Valores extremos")
     ax.legend(fontsize=8)
     fig.tight_layout()
@@ -135,11 +166,11 @@ def fig_extremos():
 
 # ---------------------------------------------------------------- Figura 3: mapa P x K
 def fig_mapa_PK():
-    Ps, Ks = np.linspace(0, 1, 11), np.arange(0, 13, 2)
+    Ps, Ks = np.linspace(0, 1, 6), np.arange(0, 17, 4)
     Z = np.array([[final(replace(BASE, P=P, K=K)) for P in Ps] for K in Ks])
     fig, ax = plt.subplots(figsize=(6.5, 4))
     im = ax.imshow(Z, origin="lower", aspect="auto", cmap="viridis_r", vmin=0, vmax=1,
-                   extent=[Ps[0] - 0.05, Ps[-1] + 0.05, Ks[0] - 1, Ks[-1] + 1])
+                   extent=[Ps[0] - 0.1, Ps[-1] + 0.1, Ks[0] - 2, Ks[-1] + 2])
     ax.set(xlabel="pressão operacional P", ylabel="número de corretores K",
            title="Desordem final (fração de células com resíduo)")
     fig.colorbar(im, ax=ax)
@@ -149,16 +180,17 @@ def fig_mapa_PK():
 
 # ---------------------------------------------------------------- Figura 4: sensibilidade
 def fig_sensibilidade():
-    varreduras = {
-        "peso do contágio $\\beta_D$": ("bD", [1, 2, 3, 4, 5, 6]),
-        "ganho de moral por supervisão $\\eta_S$": ("eta_S", [0.0, 0.01, 0.02, 0.04, 0.08]),
-        "raio de supervisão $r_s$": ("r_s", [1, 2, 3, 4, 5]),
-        "limpeza rotineira $\\rho_0$": ("rho0", [0.1, 0.2, 0.3, 0.4, 0.5]),
-    }
-    fig, axs = plt.subplots(1, 4, figsize=(13, 3.2), sharey=True)
-    for ax, (titulo, (campo, valores)) in zip(axs, varreduras.items()):
-        for dirigido, rot in ((True, "corretores dirigidos"), (False, "corretores aleatórios")):
-            y = [final(replace(BASE, dirigido=dirigido, **{campo: v})) for v in valores]
+    # cada varredura: (rótulo, campos alterados juntos, valores)
+    varreduras = [
+        ("peso do contágio $\\beta_D$", ("bDT", "bDA"), [0.0, 0.7, 1.4, 2.1, 2.8]),
+        ("peso da supervisão $\\beta_S$", ("bST",), [0.0, 0.5, 1.0, 1.5, 2.0]),
+        ("raio de supervisão $r_s$", ("r_s",), [1, 2, 3, 4, 5]),
+        ("correção basal dos trabalhadores $c_T$", ("cT",), [-3.0, -2.25, -1.5, -0.75, 0.0]),
+    ]
+    fig, axs = plt.subplots(1, 4, figsize=(14, 3.2), sharey=True)
+    for ax, (titulo, campos, valores) in zip(axs, varreduras):
+        for pol, rot in POLITICAS:
+            y = [final(replace(BASE, politica=pol, **{c: v for c in campos})) for v in valores]
             ax.plot(valores, y, "o-", label=rot)
         ax.set(xlabel=titulo)
     axs[0].set_ylabel("desordem final")
@@ -182,3 +214,9 @@ def fig_choque():
     fig.savefig(os.path.join(OUTPUT_DIR, "fig5_choque_pressao.png"), dpi=200)
 
 
+if __name__ == "__main__":
+    fig_cenario_base()
+    fig_extremos()
+    fig_mapa_PK()
+    fig_sensibilidade()
+    fig_choque()

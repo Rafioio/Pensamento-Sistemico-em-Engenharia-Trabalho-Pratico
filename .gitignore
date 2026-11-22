@@ -1,0 +1,282 @@
+
+# =========================
+# PYTHON - BYTECODE / CACHE
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# =========================
+# EXTENSIONS / COMPILED
+# =========================
+*.so
+*.dll
+*.dylib
+
+# =========================
+# VIRTUAL ENVIRONMENTS
+# =========================
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-env/
+
+# =========================
+# ENVIRONMENT VARIABLES / SECRETS
+# =========================
+.env
+.env.*
+!.env.example
+!.env.sample
+.envrc
+secrets/
+secrets.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# =========================
+# DISTRIBUTION / PACKAGING
+# =========================
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg
+*.egg-info/
+.installed.cfg
+MANIFEST
+*.manifest
+
+# =========================
+# PYINSTALLER
+# =========================
+*.spec
+
+# =========================
+# PIP
+# =========================
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =========================
+# TESTS / COVERAGE
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+test-results/
+*.cover
+*.py.cover
+*.lcov
+.hypothesis/
+cover/
+
+# =========================
+# TYPE CHECKING
+# =========================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# =========================
+# LINT / FORMAT / TOOLS
+# =========================
+.ruff_cache/
+.black_cache/
+.pylint.d/
+.pyright/
+.benchmarks/
+
+# =========================
+# LOGS
+# =========================
+*.log
+logs/
+
+# =========================
+# JUPYTER / IPYTHON
+# =========================
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# =========================
+# DJANGO
+# =========================
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# =========================
+# FLASK
+# =========================
+instance/
+.webassets-cache
+
+# =========================
+# SCRAPY
+# =========================
+.scrapy/
+
+# =========================
+# CELERY
+# =========================
+celerybeat-schedule*
+celerybeat.pid
+
+# =========================
+# REDIS
+# =========================
+*.rdb
+*.aof
+*.pid
+
+# =========================
+# RABBITMQ / ACTIVEMQ
+# =========================
+mnesia/
+rabbitmq/
+rabbitmq-data/
+activemq-data/
+
+# =========================
+# SPHINX / DOCUMENTATION
+# =========================
+docs/_build/
+site/
+
+# =========================
+# PYBUILDER
+# =========================
+.pybuilder/
+target/
+
+# =========================
+# PYTHON VERSION MANAGERS
+# =========================
+# pyenv
+# .python-version
+
+# =========================
+# CONDA
+# =========================
+conda-meta/
+
+# =========================
+# POETRY
+# =========================
+# poetry.lock
+# poetry.toml
+
+# =========================
+# UV
+# =========================
+# uv.lock
+
+# =========================
+# PDM
+# =========================
+.pdm-python
+.pdm-build/
+# pdm.lock
+# pdm.toml
+
+# =========================
+# PIXI
+# =========================
+.pixi/
+# !.pixi/config.toml
+
+# =========================
+# PEP 582
+# =========================
+__pypackages__/
+
+# =========================
+# CYTHON
+# =========================
+cython_debug/
+
+# =========================
+# SAGE MATH
+# =========================
+*.sage.py
+
+# =========================
+# IDEs / EDITORS
+# =========================
+
+# VS Code
+.vscode/
+
+# PyCharm / IntelliJ
+.idea/
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# Sublime Text
+*.sublime-workspace
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# TEMPORARY FILES
+# =========================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+tempCodeRunnerFile.py
+
+# =========================
+# STREAMLIT
+# =========================
+.streamlit/secrets.toml
+
+# =========================
+# MARIMO
+# =========================
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+
+# =========================
+# ABSTRA
+# =========================
+.abstra/
+
+# =========================
+# OTHER
+# =========================
+*.bak
+*.old
