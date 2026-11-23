@@ -10,12 +10,13 @@ Modelo Baseado em Agentes (ABM) para estudo de dinâmicas organizacionais, cont�
 Pensamento-Sistemico-em-Engenharia-Trabalho-Pratico/
 │
 ├── configs/
-│   ├── params.py         # Dataclass Params com parâmetros do modelo
+│   ├── params.py         # Dataclass Params com parâmetros do modelo e validações
 │   └── paths.py          # Resolução de diretórios (ROOT, OUTPUTS, PERSISTENCIA)
 │
 ├── model/
 │   ├── __init__.py       # Exportações públicas do pacote
 │   ├── model.py          # Lógica central do ABM, simular(), rodar() e figuras
+│   ├── dinamicas.py      # Dinâmica com delays para Pressão e Moral
 │   ├── persistencia.py   # Serialização JSON/CSV, validação e carregamento
 │   └── utils/
 │       └── interface.py  # Funções auxiliares de interface
@@ -26,7 +27,9 @@ Pensamento-Sistemico-em-Engenharia-Trabalho-Pratico/
 │
 ├── tests/
 │   ├── __init__.py
-│   └── test_persistencia.py # Suite de testes e validação de persistência
+│   ├── test_persistencia.py       # Validação geral de persistência
+│   ├── test_pressao_dinamica.py   # Testes unitários da dinâmica de pressão
+│   └── test_moral_dinamica.py     # Testes unitários da dinâmica de moral
 │
 ├── run_model.py          # Geração de todas as figuras comparativas
 ├── run_simulacao.py      # Execução de simulações com persistência via CLI
@@ -36,36 +39,43 @@ Pensamento-Sistemico-em-Engenharia-Trabalho-Pratico/
 
 ---
 
+## ⏱️ Dinâmicas Temporais com Atrasos (Delays)
+
+### 1. Dinâmica de Pressão (`pressão.txt`)
+- **Restrição:** `0 < a < c < b`
+- **Gatilho (novo erro criado):** agenda 3 eventos:
+  1. `(+p, c)`: início da medida administrativa
+  2. `(-p, c+a)`: fim do pico da medida administrativa
+  3. `(-q, c+b)`: efeito preventivo consolidado
+- **Piso mínimo:** se `pressao < pressaoMin` por `h` turnos consecutivos, força retorno ao piso.
+
+### 2. Dinâmica de Moral (`moral.txt`)
+- **Inicialização:** agentes iniciam com desvios centrados garantindo média exata igual a `moral_inicial`.
+- **Gatilho (erro eliminado):** agenda `CD` com `impacto = x` e `tempo_restante = y`.
+- **Atualização:** a cada ciclo aplica maturação de CDs, depreciação natural e influência externa (`z_moral`), propagando o delta líquido para a moral individual de cada agente.
+
+---
+
 ## 🚀 Como Executar
 
 ### 1. Executar simulações com persistência de dados
 
-Para rodar simulações com persistência de dados em `persistencia/`:
-
 ```bash
-# Execução padrão (sementes 0, 1 e 2, 600 passos cada):
+# Execução padrão (estática, cenário base):
 python run_simulacao.py
 
-# Personalizando sementes, passos e exportando também série em CSV:
-python run_simulacao.py --seeds 42 123 999 --passos 300 --salvar-csv
-
-# Ajustando parâmetros operacionais (pressão, número de corretores):
-python run_simulacao.py --seeds 1 2 3 --pressao 0.8 --corretores 12 --politica reativa
+# Ativando dinâmicas de pressão e moral com delays:
+python run_simulacao.py --pressao-dinamica --moral-dinamica --seeds 42 123 --salvar-csv
 ```
 
-### 2. Gerar as figuras dos cenários do artigo
+### 2. Rodar suites de testes unitários
 
 ```bash
-python run_model.py
-```
-
-As imagens serão salvas em `outputs/`.
-
-### 3. Rodar os testes de validação
-
-```bash
+python tests/test_pressao_dinamica.py
+python tests/test_moral_dinamica.py
 python tests/test_persistencia.py
 ```
+
 
 ---
 

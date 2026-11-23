@@ -9,7 +9,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from configs.params import Params
 from configs.paths import *
+from model.dinamicas import DinamicaMoral, DinamicaPressao, inicializar_moral
 from model.persistencia import salvar_simulacao, carregar_simulacao, validar_dados_simulacao
+
 
 
 
@@ -64,8 +66,36 @@ def simular(
     ocupada = np.zeros((L, L), bool)
     ocupada[pos[:, 0], pos[:, 1]] = True
 
-    # moral individual, fixa; probabilidade de correção (constante no tempo)
-    M = np.clip(rng.normal(par.M_bar, par.M_sd, N), 0, 1)
+    # moral individual e dinâmica
+    if par.moral_dinamica:
+        M = inicializar_moral(N, par.moral_inicial, par.M_sd, rng)
+    else:
+        M = np.clip(rng.normal(par.M_bar, par.M_sd, N), 0, 1)
+
+    # Controladores das dinâmicas temporais com delays
+    din_pressao = DinamicaPressao(
+        pressao=float(par.P),
+        pressaoMin=float(par.pressaoMin),
+        z=float(par.z),
+        p=float(par.p),
+        q=float(par.q),
+        a=int(par.a),
+        b=int(par.b),
+        c=int(par.c),
+        h=int(par.h),
+        pressao_dinamica=par.pressao_dinamica,
+    )
+
+    din_moral = DinamicaMoral(
+        moral_inicial=float(par.moral_inicial),
+        depreciacao=float(par.depreciacao),
+        x=float(par.x),
+        y=int(par.y),
+        z_moral=float(par.z_moral),
+        moral_dinamica=par.moral_dinamica,
+        moral_media=float(np.mean(M)),
+    )
+
     p_corr = np.where(eh_corretor, sig(par.cA + par.gA * M), sig(par.cT + par.gT * M))
 
     desordem, erro, prejuizo = [], [], []
@@ -76,8 +106,17 @@ def simular(
     total_erros_eliminados = 0
 
     for t in range(par.T):
-        P = par.P if P_t is None else P_t(t)
+        # Determina a pressão atuante neste passo
+        if par.pressao_dinamica:
+            P = din_pressao.pressao
+        else:
+            P = par.P if P_t is None else P_t(t)
+
         xs, ys = pos[:, 0], pos[:, 1]
+
+        # Recalcula p_corr se a moral for dinâmica ao longo do tempo
+        if par.moral_dinamica:
+            p_corr = np.where(eh_corretor, sig(par.cA + par.gA * M), sig(par.cT + par.gT * M))
 
         # --- 1. percepção: D (vizinhança de Moore, sem a célula própria) e S (corretor a <= r_s)
         D = ((janela(waste, 1) - waste) / 8)[xs, ys]
@@ -102,6 +141,15 @@ def simular(
         eliminados_passo = int(np.sum((w0 == 1.0) & (~err) & corrige))
         total_erros_criados += criados_passo
         total_erros_eliminados += eliminados_passo
+
+        # Gatilhos de eventos com atraso (delays):
+        # 1. Quando novo erro nasce: agenda 3 eventos de resposta administrativa na fila de pressão
+        if par.pressao_dinamica and criados_passo > 0:
+            din_pressao.agendar_resposta_erro(criados_passo)
+
+        # 2. Quando erro é eliminado: agenda novos CDs na fila de moral
+        if par.moral_dinamica and eliminados_passo > 0:
+            din_moral.agendar_cd(eliminados_passo)
 
         # --- 4. movimento sequencial, em ordem aleatória
         alvo = janela(waste, par.r_s) if (K > 0 and par.politica == "reativa") else None
@@ -131,12 +179,21 @@ def simular(
             ocupada[novo] = True
             pos[i] = novo
 
-        # Métricas do passo
+        # Métricas do passo t (estado sob o qual os agentes atuaram neste tick)
         frac_desordem = float(waste.mean())
         taxa_erro = float(err[:NT].mean())
         num_erros_ativos = int(waste.sum())
         moral_atual = float(np.mean(M))
         pressao_atual = float(P)
+
+        # Atualizações dinâmicas ao final do passo do loop (transição para o próximo tick)
+        if par.pressao_dinamica:
+            din_pressao.atualizar_ciclo()
+
+        if par.moral_dinamica:
+            din_moral.atualizar_ciclo(M)
+
+
 
         desordem.append(frac_desordem)
         erro.append(taxa_erro)
@@ -210,7 +267,10 @@ def simular(
         serie_temporal=serie_temporal,
         dados_completos=dados_simulacao,
         caminho_arquivo=caminho_arquivo,
+        controlador_pressao=din_pressao,
+        controlador_moral=din_moral,
     )
+
 
 
 def executar_simulacao(
