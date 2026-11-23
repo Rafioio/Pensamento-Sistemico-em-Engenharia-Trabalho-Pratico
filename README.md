@@ -1,6 +1,15 @@
 # Desvios Ambientais por Falha Humana — Modelo Baseado em Agentes
 ### ELE637 Pensamento Sistêmico em Engenharia — Trabalho Prático
 
+**Grupo 3** — Escola de Engenharia, Universidade Federal de Minas Gerais (UFMG)
+
+| Integrante | Matrícula |
+|---|---|
+| Elias Daniel Moreira de Siqueira | 2024022825 |
+| Henrique Viana Lima de Oliveira | 2023066543 |
+| Pedro Armando Oliveira Duarte | 2024022710 |
+| Rafael Campello Soares | 2024017457 |
+
 ---
 
 ## 1. Título e Contexto
