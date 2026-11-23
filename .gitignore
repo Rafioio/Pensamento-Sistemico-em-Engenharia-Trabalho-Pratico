@@ -280,3 +280,10 @@ __marimo__/
 # =========================
 *.bak
 *.old
+
+# =========================
+# SIMULATION PERSISTENCE
+# =========================
+persistencia/*
+!persistencia/.gitkeep
+

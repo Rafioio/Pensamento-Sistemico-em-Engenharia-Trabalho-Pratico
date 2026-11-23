@@ -1,4 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from typing import Any, Dict
+
+
 @dataclass
 class Params:
     """Parâmetros do modelo (valores base da Tabela de parâmetros do artigo)."""
@@ -36,3 +39,7 @@ class Params:
     # movimento dos corretores: "aleatoria", "reativa" ou "cobertura"
     politica: str = "aleatoria"
     eps: float = 0.1         # prob. de ignorar a política e andar ao acaso
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converte os parâmetros para dicionário serializável."""
+        return asdict(self)

@@ -1,11 +1,16 @@
 import os
-from dataclasses import replace
+from dataclasses import asdict, replace
+from datetime import datetime
+from typing import Optional, Union
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from configs.params import Params
 from configs.paths import *
+from model.persistencia import salvar_simulacao, carregar_simulacao, validar_dados_simulacao
+
 
 
 BASE = Params()          # cenário base (valores em configs/params.py)
@@ -31,11 +36,23 @@ def janela(a, r):
     return out
 
 
-def simular(par: Params, P_t=None):
+def simular(
+    par: Params,
+    P_t=None,
+    salvar: bool = False,
+    diretorio_persistencia: Optional[Union[str, Path]] = None,
+    salvar_csv: bool = False,
+):
     """Roda uma simulação do modelo do artigo. P_t(t) opcional faz a pressão variar no tempo.
 
     Os N_T primeiros agentes são trabalhadores e os K últimos são corretores.
-    Retorna dict com séries temporais e o estado final."""
+    Coleta séries temporais completas e metadados requeridos:
+    - Série temporal: moral_media, erros_ativos, pressao (e opcionais: desordem, taxa_erro, etc.)
+    - Metadados: seed, parametros_iniciais, total_erros_criados, total_erros_eliminados.
+
+    Retorna dict compatível com a interface original e enriquecido com os novos dados.
+    Se salvar=True, persiste os resultados em JSON (e opcionalmente CSV) em persistencia/.
+    """
     rng = np.random.default_rng(par.seed)
     L, NT, K = par.L, par.N_T, par.K
     N = NT + K
@@ -52,6 +69,11 @@ def simular(par: Params, P_t=None):
     p_corr = np.where(eh_corretor, sig(par.cA + par.gA * M), sig(par.cT + par.gT * M))
 
     desordem, erro, prejuizo = [], [], []
+    moral_media_serie, erros_ativos_serie, pressao_serie = [], [], []
+    erros_criados_serie, erros_eliminados_serie = [], []
+
+    total_erros_criados = 0
+    total_erros_eliminados = 0
 
     for t in range(par.T):
         P = par.P if P_t is None else P_t(t)
@@ -74,6 +96,12 @@ def simular(par: Params, P_t=None):
         corrige = rng.random(N) < p_corr
         w0 = waste[xs, ys]
         waste[xs, ys] = np.where(err, 1.0, np.where((w0 == 1) & corrige, 0.0, w0))
+
+        # Contabilização de erros gerados e eliminados neste tick
+        criados_passo = int(np.sum(err))
+        eliminados_passo = int(np.sum((w0 == 1.0) & (~err) & corrige))
+        total_erros_criados += criados_passo
+        total_erros_eliminados += eliminados_passo
 
         # --- 4. movimento sequencial, em ordem aleatória
         alvo = janela(waste, par.r_s) if (K > 0 and par.politica == "reativa") else None
@@ -103,12 +131,107 @@ def simular(par: Params, P_t=None):
             ocupada[novo] = True
             pos[i] = novo
 
-        desordem.append(waste.mean())
-        erro.append(err[:NT].mean())
-        prejuizo.append(waste.sum())
+        # Métricas do passo
+        frac_desordem = float(waste.mean())
+        taxa_erro = float(err[:NT].mean())
+        num_erros_ativos = int(waste.sum())
+        moral_atual = float(np.mean(M))
+        pressao_atual = float(P)
 
-    return dict(desordem=np.array(desordem), erro=np.array(erro),
-                prejuizo=np.array(prejuizo), waste=waste, pos=pos[NT:].copy(), M=M)
+        desordem.append(frac_desordem)
+        erro.append(taxa_erro)
+        prejuizo.append(num_erros_ativos)
+
+        moral_media_serie.append(moral_atual)
+        erros_ativos_serie.append(num_erros_ativos)
+        pressao_serie.append(pressao_atual)
+        erros_criados_serie.append(criados_passo)
+        erros_eliminados_serie.append(eliminados_passo)
+
+    # Construção da série temporal estruturada
+    serie_temporal = [
+        {
+            "passo": t,
+            "moral_media": moral_media_serie[t],
+            "erros_ativos": erros_ativos_serie[t],
+            "pressao": pressao_serie[t],
+            "desordem": desordem[t],
+            "taxa_erro_trabalhadores": erro[t],
+            "erros_criados_passo": erros_criados_serie[t],
+            "erros_eliminados_passo": erros_eliminados_serie[t],
+        }
+        for t in range(par.T)
+    ]
+
+    parametros_iniciais = par.to_dict() if hasattr(par, "to_dict") else asdict(par)
+    dados_simulacao = {
+        "seed": int(par.seed),
+        "timestamp": datetime.now().isoformat(),
+        "parametros_iniciais": parametros_iniciais,
+        "total_erros_criados": int(total_erros_criados),
+        "total_erros_eliminados": int(total_erros_eliminados),
+        "resumo": {
+            "passos_totais": int(par.T),
+            "erros_ativos_final": int(erros_ativos_serie[-1]) if erros_ativos_serie else 0,
+            "desordem_final": float(desordem[-1]) if desordem else 0.0,
+            "desordem_media_janela_final": float(np.mean(desordem[-JANELA_FINAL:])) if desordem else 0.0,
+            "moral_media_final": float(moral_media_serie[-1]) if moral_media_serie else 0.0,
+        },
+        "serie_temporal": serie_temporal,
+    }
+
+    caminho_arquivo = None
+    if salvar:
+        dir_saida = diretorio_persistencia if diretorio_persistencia is not None else PERSISTENCIA_DIR
+        caminho_arquivo = salvar_simulacao(
+            dados_simulacao,
+            diretorio=dir_saida,
+            salvar_csv=salvar_csv,
+        )
+
+    return dict(
+        desordem=np.array(desordem),
+        erro=np.array(erro),
+        prejuizo=np.array(prejuizo),
+        waste=waste,
+        pos=pos[NT:].copy(),
+        M=M,
+        # Séries temporais adicionais
+        moral_media=np.array(moral_media_serie),
+        erros_ativos=np.array(erros_ativos_serie),
+        pressao=np.array(pressao_serie),
+        erros_criados=np.array(erros_criados_serie),
+        erros_eliminados=np.array(erros_eliminados_serie),
+        # Totais e metadados
+        total_erros_criados=int(total_erros_criados),
+        total_erros_eliminados=int(total_erros_eliminados),
+        seed=int(par.seed),
+        parametros_iniciais=parametros_iniciais,
+        serie_temporal=serie_temporal,
+        dados_completos=dados_simulacao,
+        caminho_arquivo=caminho_arquivo,
+    )
+
+
+def executar_simulacao(
+    par: Params = BASE,
+    seed: Optional[int] = None,
+    salvar: bool = True,
+    salvar_csv: bool = False,
+    diretorio: Optional[Union[str, Path]] = None,
+    P_t=None,
+):
+    """Executa uma simulação isolada e opcionalmente persiste os dados gerados."""
+    if seed is not None:
+        par = replace(par, seed=seed)
+    return simular(
+        par,
+        P_t=P_t,
+        salvar=salvar,
+        diretorio_persistencia=diretorio,
+        salvar_csv=salvar_csv,
+    )
+
 
 def rodar(par, n=3, P_t=None):
     """Roda n sementes e devolve a matriz (n, T) da fração de células com resíduo."""
