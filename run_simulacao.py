@@ -57,11 +57,103 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Política de movimento dos corretores.",
     )
+    # Dinâmica de Pressão com atrasos
+    parser.add_argument(
+        "--pressao-dinamica",
+        action="store_true",
+        help="Ativa a dinâmica temporal de atualização de pressão com delays.",
+    )
+    parser.add_argument(
+        "--pressao-min",
+        type=float,
+        default=None,
+        help="Piso basal de pressão operacional (pressaoMin).",
+    )
+    parser.add_argument(
+        "--z",
+        type=float,
+        default=None,
+        help="Influência externa contínua por ciclo sobre a pressão.",
+    )
+    parser.add_argument(
+        "-p", "--aumento-pressao",
+        type=float,
+        default=None,
+        help="Magnitude do aumento temporário de pressão (p > 0).",
+    )
+    parser.add_argument(
+        "-q", "--reducao-pressao",
+        type=float,
+        default=None,
+        help="Magnitude da redução de pressão consolidada (q > 0).",
+    )
+    parser.add_argument(
+        "-a", "--duracao-aumento",
+        type=int,
+        default=None,
+        help="Duração em ticks do pico de pressão (a).",
+    )
+    parser.add_argument(
+        "-c", "--atraso-adm",
+        type=int,
+        default=None,
+        help="Atraso em ticks até início da medida administrativa (c).",
+    )
+    parser.add_argument(
+        "-b", "--delay-reducao",
+        type=int,
+        default=None,
+        help="Atraso em ticks para redução preventiva ocorrer (b).",
+    )
+    parser.add_argument(
+        "-h-turnos", "--turnos-minimo",
+        type=int,
+        default=None,
+        dest="h",
+        help="Quantidade de turnos consecutivos abaixo de pressaoMin (h).",
+    )
+    # Dinâmica de Moral com atrasos
+    parser.add_argument(
+        "--moral-dinamica",
+        action="store_true",
+        help="Ativa a dinâmica temporal de atualização de moral com delays.",
+    )
+    parser.add_argument(
+        "--moral-inicial",
+        type=float,
+        default=None,
+        help="Valor alvo da moral média inicial da população.",
+    )
+    parser.add_argument(
+        "--depreciacao",
+        type=float,
+        default=None,
+        help="Queda natural constante da moral média por ciclo.",
+    )
+    parser.add_argument(
+        "-x", "--impacto-cd",
+        type=float,
+        default=None,
+        help="Ganho na moral média por CD (Correção de Desvio) concluído (x > 0).",
+    )
+    parser.add_argument(
+        "-y", "--tempo-moral",
+        type=int,
+        default=None,
+        help="Atraso em ticks para o CD aumentar a moral (y > 0).",
+    )
+    parser.add_argument(
+        "--z-moral",
+        type=float,
+        default=None,
+        help="Influência externa contínua por ciclo sobre a moral.",
+    )
     parser.add_argument(
         "--salvar-csv",
         action="store_true",
         help="Se informado, também salva um arquivo CSV com a série temporal por execução.",
     )
+
     parser.add_argument(
         "--sem-salvar",
         action="store_true",
@@ -90,6 +182,36 @@ def main() -> None:
         alteracoes["K"] = args.corretores
     if args.politica is not None:
         alteracoes["politica"] = args.politica
+    if args.pressao_dinamica:
+        alteracoes["pressao_dinamica"] = True
+    if args.pressao_min is not None:
+        alteracoes["pressaoMin"] = args.pressao_min
+    if args.z is not None:
+        alteracoes["z"] = args.z
+    if args.aumento_pressao is not None:
+        alteracoes["p"] = args.aumento_pressao
+    if args.reducao_pressao is not None:
+        alteracoes["q"] = args.reducao_pressao
+    if args.duracao_aumento is not None:
+        alteracoes["a"] = args.duracao_aumento
+    if args.delay_reducao is not None:
+        alteracoes["b"] = args.delay_reducao
+    if args.atraso_adm is not None:
+        alteracoes["c"] = args.atraso_adm
+    if args.h is not None:
+        alteracoes["h"] = args.h
+    if args.moral_dinamica:
+        alteracoes["moral_dinamica"] = True
+    if args.moral_inicial is not None:
+        alteracoes["moral_inicial"] = args.moral_inicial
+    if args.depreciacao is not None:
+        alteracoes["depreciacao"] = args.depreciacao
+    if args.impacto_cd is not None:
+        alteracoes["x"] = args.impacto_cd
+    if args.tempo_moral is not None:
+        alteracoes["y"] = args.tempo_moral
+    if args.z_moral is not None:
+        alteracoes["z_moral"] = args.z_moral
 
     if alteracoes:
         par = replace(par, **alteracoes)
@@ -102,9 +224,15 @@ def main() -> None:
     print("=" * 65)
     print(f"Diretório de persistência: {dir_saida.resolve()}")
     print(f"Sementes a executar: {args.seeds}")
-    print(f"Passos (T): {par.T} | Pressão (P): {par.P} | Corretores (K): {par.K}")
+    print(f"Passos (T): {par.T} | Pressão Inicial (P): {par.P} | Corretores (K): {par.K}")
+    print(f"Pressão Dinâmica: {par.pressao_dinamica} | Moral Dinâmica: {par.moral_dinamica}")
+    if par.pressao_dinamica:
+        print(f"  - Parâmetros Pressão: a={par.a}, c={par.c}, b={par.b}, p={par.p}, q={par.q}, z={par.z}, h={par.h}, pressaoMin={par.pressaoMin}")
+    if par.moral_dinamica:
+        print(f"  - Parâmetros Moral: moral_inicial={par.moral_inicial}, depreciacao={par.depreciacao}, x={par.x}, y={par.y}, z_moral={par.z_moral}")
     print(f"Política: {par.politica} | Salvar CSV: {args.salvar_csv}")
     print("-" * 65)
+
 
     arquivos_gerados = []
     for s in args.seeds:

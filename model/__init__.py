@@ -15,6 +15,11 @@ from model.model import (
     fig_sensibilidade,
     fig_choque,
 )
+from model.dinamicas import (
+    DinamicaPressao,
+    DinamicaMoral,
+    inicializar_moral,
+)
 from model.persistencia import (
     salvar_simulacao,
     carregar_simulacao,
@@ -37,9 +42,13 @@ __all__ = [
     "fig_mapa_PK",
     "fig_sensibilidade",
     "fig_choque",
+    "DinamicaPressao",
+    "DinamicaMoral",
+    "inicializar_moral",
     "salvar_simulacao",
     "carregar_simulacao",
     "listar_simulacoes",
     "validar_dados_simulacao",
     "carregar_para_dataframe",
 ]
+
