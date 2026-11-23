@@ -1,0 +1,275 @@
+% =====================================================================
+% ELE637 -- Pensamento Sistêmico em Engenharia
+% Trabalho Prático: desvios ambientais por falha humana (DLC + ABM)
+% =====================================================================
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+% figuras próprias em figuras/; gráficos lidos direto de ../outputs (gerados por run_model.py)
+\graphicspath{{figuras/}{../outputs/}}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[authoryear, round]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage[protrusion=true, expansion=false]{microtype}
+\usepackage[font=small]{caption}
+\usepackage{enumitem}
+\setlist{itemsep=1pt, topsep=3pt, parsep=0pt}
+
+% ---------------------------------------------------------------------
+\title{Dinâmica dos desvios ambientais por falha humana:\\
+pressão operacional, supervisão e moral coletiva}
+\author{%
+  \small\begin{tabular}[t]{@{}c@{\hspace{2em}}c@{}}
+    Rafael Campello Soares (2024017457) & Elias Daniel Moreira de Siqueira (2024022825) \\[4pt]
+    Pedro Armando Oliveira Duarte (2024022710) &
+    Henrique Viana Lima de Oliveira (2023066543)
+  \end{tabular}\vspace{1em}\\
+  {\small ELE637 -- Pensamento Sistêmico em Engenharia -- UFMG}
+}
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Desvios ambientais causados por falha humana, como o descarte incorreto de resíduos, persistem mesmo em organizações com procedimentos bem definidos. Este trabalho parte da experiência de um dos integrantes com melhoria contínua na área ambiental da Vallourec e pergunta como a pressão operacional, a supervisão e a moral coletiva determinam se a taxa de desvios converge para a ordem ou para a desordem. A situação é representada por um Diagrama de Loop Causal (DLC) com laços de reforço e de balanceamento, e simulada por um modelo baseado em agentes em que trabalhadores, sujeitos à pressão, ao contágio da desordem visível e à moral, erram com certa probabilidade, enquanto agentes corretores supervisionam seu entorno. A desordem se estabiliza em um único patamar, que nunca chega a zero; a moral e a facilidade de corrigir os desvios pesam mais do que a pressão e a supervisão, e o contágio da desordem tem um limiar acima do qual o patamar sobe de forma abrupta.
+\end{abstract}
+
+% =====================================================================
+\section{Introdução}
+% =====================================================================
+Este trabalho tem origem na atuação de um dos integrantes do grupo com melhoria contínua na área ambiental da Vallourec, onde o foco era criar estruturas e procedimentos para prevenir desvios ambientais, em especial os causados por falha humana.
+
+Os desvios variam em gravidade. Os \emph{leves} envolvem falta de organização, sujeira ou descarte incorreto de lixo comum, têm baixo impacto imediato e muitas vezes são negligenciados na prática. Os \emph{médios} exigem planos de contingência e ações corretivas para evitar recorrência. Os \emph{graves}, como vazamentos de produtos químicos e emissões atmosféricas, geram multas, impacto ambiental severo, repercussão social e risco de embargo das operações. A situação importa para a organização porque os desvios leves são frequentes e, como sugere a literatura sobre a normalização do desvio \citep{banja2010}, podem criar um ambiente em que desvios mais sérios passam a ser tolerados.
+
+O trabalho aplica o pensamento sistêmico \citep{meadows2022,sterman2000} e a modelagem de sistemas complexos \citep{sayama2015}: do problema ao diagrama, do diagrama ao modelo computacional e do modelo à análise.
+
+% =====================================================================
+\section{A situação estudada}
+% =====================================================================
+
+\subsection{Tema, horizonte de tempo e comportamento observado}
+O tema é a ocorrência recorrente de desvios ambientais por falha humana, tomando como caso representativo o descarte incorreto de resíduos em uma área operacional. O horizonte de interesse é de meses de operação contínua. O comportamento observado é crônico: os erros ocorrem continuamente, ora mais, ora menos, e nunca desaparecem. Há picos nos períodos de maior produção, queda depois de campanhas e ações corretivas e, em seguida, retorno gradual ao nível anterior.
+
+\subsection{Pergunta a responder}
+Existe uma dissincronia entre a empresa teórica, em que os processos são perfeitos e as pessoas seguem as regras sem errar, e a empresa real, em que os erros ocorrem o tempo todo. Embora a engenharia trate o erro como falha sistêmica, na ponta ele é executado por indivíduos. A pergunta do grupo é:
+\begin{quote}
+\emph{Como a pressão operacional, a supervisão e a moral coletiva interagem para determinar se os desvios ambientais por falha humana se estabilizam em um nível baixo ou se escalam para a desordem, e quais alavancas reduzem a probabilidade do erro?}
+\end{quote}
+
+\subsection{Fronteira do sistema}
+\begin{itemize}
+  \item \textbf{Dentro:} trabalhadores da ponta, a supervisão exercida pela empresa (medidas administrativas e orientação em campo), a pressão operacional, a moral coletiva, a desordem visível no ambiente de trabalho e o prejuízo para a empresa.
+  \item \textbf{Externo (entra como entrada):} fatores externos que modulam a pressão, como demanda e prazos de produção.
+  \item \textbf{Fora:} legislação e fiscalização externas, falhas de equipamento e de processo, e desvios que não dependem de decisão humana.
+\end{itemize}
+
+\subsection{A situação vista como sistema}
+As partes são os trabalhadores, os supervisores, os resíduos e o ambiente físico; as relações são a influência da pressão sobre as decisões, o efeito da desordem visível sobre quem a observa e a reação da empresa aos prejuízos; o propósito é produzir mantendo a conformidade ambiental. Sinais de complexidade:
+\begin{itemize}
+  \item \textbf{Laços que se reforçam e que competem:} a desordem visível induz mais desordem, enquanto a supervisão e a moral a combatem (Seção~\ref{sec:dlc}).
+  \item \textbf{Atrasos:} entre o prejuízo e a reação administrativa, e entre as medidas sociais e a moral.
+  \item \textbf{Efeito contraintuitivo e resistência a políticas:} medidas administrativas que, ao pressionar a operação, podem aumentar o erro que pretendiam reduzir.
+  \item \textbf{Não linearidade e limiar:} o efeito da desordem sobre o comportamento é pequeno até certo ponto e depois cresce rapidamente; acima de certo nível a norma de não descartar de forma incorreta pode colapsar, como em estudos sobre descarte de lixo \citep{rangoni2017}.
+  \item \textbf{Emergência:} padrões globais de ordem ou desordem surgem de interações locais entre vizinhos.
+\end{itemize}
+
+Segundo o relato do integrante, há três causas-raiz da falha humana, ilustradas no descarte incorreto:
+\begin{enumerate}
+  \item \textbf{Pressão operacional (falta de tempo e sobrecarga):} quando o ritmo aperta, o colaborador prioriza a produção e dedica menos tempo a pensar no descarte correto, e deixa o resíduo no local mais próximo.
+  \item \textbf{Complexidade e esquecimento (sobrecarga cognitiva):} a variedade de insumos usados diariamente (centenas de tipos de tintas, lixas, graxas e produtos químicos) gera dúvida sobre a destinação correta e leva a descartes aleatórios.
+  \item \textbf{Desengajamento (negligência):} mesmo sem pressão e conhecendo a regra, há pessoas que erram por não se importarem com o meio ambiente ou com as consequências coletivas.
+\end{enumerate}
+
+% =====================================================================
+\section{Modelo conceitual}\label{sec:dlc}
+% =====================================================================
+A Figura~\ref{fig:dlc} apresenta o DLC. O nó central é o \emph{desvio operacional humano}, que na Seção~\ref{sec:modelo} é tratado como a probabilidade de um trabalhador errar.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[trim=160pt 235pt 160pt 50pt, clip, width=0.6\textwidth]{figuras/diagrama_loop_causal.pdf}
+  \caption{Diagrama de Loop Causal da dinâmica do desvio operacional. Os laços R são de reforço e os laços B de balanceamento. Os traços duplos nas setas indicam atrasos.}
+  \label{fig:dlc}
+\end{figure}
+
+\paragraph{Laços de reforço.}
+\begin{itemize}
+  \item \textbf{R1 (desordem visível):} desvio $\rightarrow$ desordem visível $\rightarrow$ mais desvio. É o contágio em que ver erros por perto torna o erro mais provável, o mecanismo associado à teoria das janelas quebradas \citep{ball2012}.
+  \item \textbf{R2 (resistência a políticas):} desvio $\rightarrow$ prejuízo $\rightarrow$ medidas administrativas $\rightarrow$ pressão $\rightarrow$ mais desvio. A reação da empresa, quando aumenta a pressão sobre a operação, realimenta o problema que pretendia resolver.
+\end{itemize}
+
+\paragraph{Laços de balanceamento.}
+\begin{itemize}
+  \item \textbf{B1 (supervisão):} desvio $\rightarrow$ prejuízo $\rightarrow$ medidas administrativas $\rightarrow$ menos desvio, com atraso entre o prejuízo e a reação.
+  \item \textbf{B2 (medida social):} desvio $\rightarrow$ prejuízo $\rightarrow$ medida social $\rightarrow$ menos desvio.
+  \item \textbf{B3 (moral):} desvio $\rightarrow$ prejuízo $\rightarrow$ medida social $\rightarrow$ moral $\rightarrow$ menos desordem visível $\rightarrow$ menos desvio, com atraso na formação da moral.
+\end{itemize}
+O fator externo entra apenas como entrada que aumenta a pressão. O par B1--R2 corresponde ao arquétipo \emph{soluções que falham} \citep{meadows2022}: a medida administrativa reduz o desvio, mas só depois de um atraso, enquanto a pressão que ela gera age de imediato e realimenta o problema. Por isso as melhoras obtidas por medidas administrativas tendem a ser temporárias, como no comportamento descrito na Seção~2.1.
+
+% =====================================================================
+\section{Modelo computacional}\label{sec:modelo}
+% =====================================================================
+\subsection{Delimitação temporal e simplificações do modelo}
+O modelo computacional representa uma aproximação de curto prazo da dinâmica do DLC. Um passo de tempo corresponde a cerca de uma hora de operação, e uma execução de 600 passos cobre algumas semanas de turnos. Nessa escala, os laços que dependem de atrasos organizacionais (a implementação de medidas administrativas, em R2 e B1, e a formação gradual da moral, em B3) são lentos demais para variar dentro de uma execução. Por isso a pressão operacional e a moral são tratadas como parâmetros exógenos, constantes em cada execução, e o efeito desses laços é estudado comparando execuções com valores diferentes de $P$ e $\bar M$. A desordem visível e a posição dos corretores mudam a cada passo, de modo que o laço R1, a correção e a supervisão em campo são representados diretamente. Uma versão futura poderá tornar $P$ e $M$ variáveis no tempo, com os atrasos do DLC.
+
+Foi escolhido um \textbf{modelo baseado em agentes sobre uma grade}, com regras locais de vizinhança no estilo de um autômato celular. A escolha se justifica porque (i) o fenômeno emerge de interações locais, já que o erro de um trabalhador afeta quem está por perto; (ii) trabalhadores e corretores se movem, de modo que a posição importa; e (iii) a moral varia de pessoa para pessoa, o que um modelo de estoque e fluxo não representaria sem um estoque para cada nível de moral. Modelos semelhantes foram usados para estudar o descarte de lixo e o colapso de normas \citep{rangoni2017} e o papel de agentes que fazem normas valerem \citep{savarimuthu2008}.
+
+\subsection{Agentes e ambiente}
+\begin{itemize}
+  \item \textbf{Ambiente:} grade $L\times L$ com fronteira toroidal. Cada célula pode conter resíduo descartado incorretamente, o que representa a desordem visível.
+  \item \textbf{Trabalhadores ($N_T$):} agentes móveis. A cada passo, cada trabalhador $i$ descarta um resíduo de forma incorreta com probabilidade $pdt_i(t)$ e corrige o resíduo da sua célula com probabilidade $pct_i$.
+  \item \textbf{Corretores ($K$):} agentes móveis que representam a supervisão em campo. Reduzem o erro dos trabalhadores a até $r_s$ células de distância, erram com probabilidade $pda_i(t)$ e corrigem com probabilidade $pca_i$.
+\end{itemize}
+Cada célula comporta no máximo um agente, mas um resíduo pode estar na célula de um agente.
+
+\subsection{Regras do modelo}
+\paragraph{Moral individual.}
+A pressão operacional $P\in[0,1]$ é comum a todos. A moral, ao contrário, é heterogênea e fixa para cada agente $i$:
+\[
+M_i \sim \mathrm{clip}\!\left(\mathcal{N}(\bar{M},\sigma_M^2),\,0,\,1\right),
+\]
+em que $\bar{M}$ é a moral média da equipe e $\sigma_M$ mede a dispersão entre os agentes. Valores baixos de $M_i$ representam trabalhadores desengajados (causa-raiz 3), que erram mesmo sem pressão e raramente corrigem desvios.
+
+\paragraph{Probabilidade de erro.}
+Para trabalhadores e corretores, respectivamente,
+\begin{align*}
+pdt_i(t)&=\sigma\!\left(b_T+\beta_P^T P+\beta_D^T D_i(t)-\beta_S^T S_i(t)-\beta_M^T M_i\right),\\
+pda_i(t)&=\sigma\!\left(b_A+\beta_P^A P+\beta_D^A D_i(t)-\beta_M^A M_i\right),
+\end{align*}
+em que $\sigma(x)=1/(1+e^{-x})$ é a função logística. Os interceptos $b_T>b_A$ representam a propensão basal ao erro (causa-raiz 2), maior para quem lida diretamente com os insumos. Os coeficientes $\beta$ são positivos; o corretor não sofre efeito da supervisão.
+
+\paragraph{Probabilidade de correção.}
+Um agente remove o resíduo da sua célula com probabilidade
+\[
+pct_i=\sigma\!\left(c_T+\gamma_M^T M_i\right)
+\quad\text{(trabalhadores)},
+\qquad
+pca_i=\sigma\!\left(c_A+\gamma_M^A M_i\right)
+\quad\text{(corretores)}.
+\]
+
+\paragraph{Desordem local e supervisão.}
+A desordem percebida é a fração das 8 células da vizinhança de Moore (sem a própria) com resíduo, $D_i(t)=\frac{1}{8}\sum_{j\in\mathcal{R}_i}X_j(t)$, com $X_j(t)\in\{0,1\}$. A supervisão $S_i(t)$ vale 1 se há ao menos um corretor a distância de Chebyshev $\le r_s$, e 0 caso contrário.
+
+\paragraph{Ordem de execução em cada passo.}
+\begin{enumerate}
+  \item \textbf{Percepção:} cada agente calcula $D_i(t)$ e $S_i(t)$ com o estado da grade no início do passo.
+  \item \textbf{Erro:} com probabilidade $pdt_i$ (ou $pda_i$), o agente descarta um resíduo na célula em que está. Descartes corretos não deixam marca na grade.
+  \item \textbf{Correção:} se havia resíduo na célula no início do passo, o agente o remove com probabilidade $pct_i$ (ou $pca_i$). Se erra e corrige no mesmo passo, o erro prevalece.
+  \item \textbf{Movimento:} os agentes, em ordem aleatória sorteada a cada passo, vão para uma célula vizinha livre ou ficam onde estão, segundo sua política de movimento.
+\end{enumerate}
+As etapas 1 a 3 usam o estado do início do passo e não dependem da ordem dos agentes; o movimento é sequencial porque cada deslocamento altera as células livres.
+
+\paragraph{Políticas de movimento.}
+Os trabalhadores andam ao acaso. Os corretores pontuam a própria célula e as vizinhas livres e vão para a de maior pontuação (empates ao acaso); com probabilidade $\varepsilon$ ignoram a pontuação e andam ao acaso. Foram definidas três políticas: \textbf{aleatória}, em que todas as candidatas têm a mesma pontuação (supervisão sem informação, usada no cenário base); \textbf{reativa}, em que a pontuação é o número de células com resíduo a distância $\le r_s$ (concentrar a supervisão onde o problema já apareceu); e \textbf{de cobertura}, em que a pontuação é a distância ao corretor mais próximo (espalhar a supervisão pela área antes que haja desordem). Com a política reativa, a supervisão forma um laço de balanceamento com a desordem; com as outras duas, ela é uma influência sem realimentação.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Parâmetros do modelo, valores base, faixas testadas e evidência que sustenta a escolha.}
+\label{tab:parametros_modelo}
+\begin{tabular}{@{}lllp{7.6cm}@{}}
+\toprule
+Símbolo & Base & Faixa & Ancoragem \\
+\midrule
+$L$; $N_T$, $K$ & 30; 120, 8 & $K\in[0,16]$ & 14\% das células ocupadas por agentes \\
+$r_s$ & 3 & 1--5 & alcance visual em campo (escolha de modelagem) \\
+$P$ & 0,5 & $[0,1]$ & varredura completa \\
+$\bar{M}$, $\sigma_M$ & 0,5; 0,25 & $\bar M\in[0,1]$ & dispersão alta, como em \citet{rangoni2017} \\
+$b_T$, $b_A$ & $-2{,}0$; $-3{,}0$ & --- & erro basal de 2--10\% em tarefas rotineiras \citep{kirwan1994} \\
+$\beta_P^T$, $\beta_P^A$ & 1,2; 0,6 & --- & efeito pequeno a moderado da pressão \citep{szalma2008} \\
+$\beta_D^T$, $\beta_D^A$ & 1,4; 1,4 & 0--8 & ambiente desordenado dobra o descarte indevido \citep{keizer2008,cialdini1990} \\
+$\beta_S^T$ & 1,0 & 0--2 & observador visível triplica a conformidade \citep{srigley2014} \\
+$\beta_M^T$, $\beta_M^A$ & 2,0; 2,0 & --- & clima de segurança prediz conformidade \citep{christian2009} \\
+$c_T$, $c_A$ & $-1{,}5$; $1{,}0$ & $c_T\in[-3,0]$ & corretores têm papel explícito de limpeza \citep{rangoni2017} \\
+$\gamma_M^T$, $\gamma_M^A$ & 3,0; 2,0 & --- & com $M=0{,}5$: $pct=0{,}5$ e $pca=0{,}88$ \\
+$\varepsilon$ & 0,1 & --- & ruído no movimento, como em \citet{rangoni2017} \\
+$T$ & 600 & --- & regime estacionário em menos de 100 passos \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Implementação}
+O modelo foi implementado em Python (NumPy 2.5 e Matplotlib 3.11). A simulação está em \texttt{model/model.py}, os parâmetros da Tabela~\ref{tab:parametros_modelo} em \texttt{configs/params.py}, e \texttt{run\_model.py} reproduz todas as figuras. O cenário base usa 10 sementes aleatórias, os valores extremos e o choque usam 5, e as varreduras usam 3 ou 4 por ponto. A \emph{desordem final} é a média da fração de células com resíduo nos últimos 50 passos.
+
+% =====================================================================
+\section{Simulação e análise}
+% =====================================================================
+
+\subsection{Cenário base}
+No cenário base (Figura~\ref{fig:base}), a desordem parte de uma grade limpa, sobe nos primeiros 50 passos e se estabiliza em torno de 0,16 da área com resíduo, oscilando em torno desse valor sem tendência. A cada passo, cerca de 9\% dos trabalhadores cometem um desvio. O padrão qualitativo é o observado na área: os desvios nunca somem, variam em torno de um nível e não explodem. O nível absoluto não foi comparado com dados reais, pois o modelo não foi calibrado.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{fig1_cenario_base.png}
+  \caption{Cenário base: desordem e taxa de erro dos trabalhadores (média $\pm$ desvio de 10 sementes) e estado final da grade.}
+  \label{fig:base}
+\end{figure}
+
+\subsection{Valores extremos e equilíbrios}
+Todos os casos extremos (Figura~\ref{fig:extremos}, à esquerda) convergem para um patamar estável em 50 a 150 passos. Com moral máxima a desordem fica em 0,03; com pressão nula, em 0,09; sem corretores, em 0,22; com pressão máxima, em 0,28; com moral nula, em 0,64. A moral é o parâmetro de maior efeito porque age duas vezes: reduz o erro e aumenta a correção. Um choque de pressão ($P=1$ por 50 passos, Figura~\ref{fig:extremos}, à direita) eleva a desordem a 0,28, mas ela volta ao patamar base cerca de 50 passos depois do fim do choque, sem efeito permanente.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=0.49\textwidth]{fig2_extremos.png}\hfill
+  \includegraphics[width=0.49\textwidth]{fig5_choque_pressao.png}
+  \caption{Esquerda: valores extremos de $K$, $P$ e $\bar M$. Direita: resposta a um choque temporário de pressão.}
+  \label{fig:extremos}
+\end{figure}
+
+O mapa da desordem final em função de $P$ e $K$ (Figura~\ref{fig:mapa}, à esquerda) varia de forma gradual, de 0,07 ($P=0$, $K=16$) a 0,38 ($P=1$, $K=0$). Mais corretores compensam parte da pressão: com 16 corretores e pressão máxima a desordem (0,21) ainda fica acima da do cenário base. Para procurar um ponto de virada, o peso do contágio foi variado partindo de uma grade limpa e de uma grade 70\% suja (Figura~\ref{fig:mapa}, à direita). As duas curvas coincidem: o sistema tem um único equilíbrio para cada conjunto de parâmetros, sem histerese. Porém a resposta é fortemente não linear: até $\beta_D\approx2{,}8$ a desordem final sobe pouco (0,16 para 0,23), entre 2,8 e 5 salta para 0,74 e, acima de 6, a área fica praticamente toda suja. Esse é o limiar do laço R1: quando o contágio domina a correção, a norma colapsa.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=0.49\textwidth]{fig3_mapa_PK.png}\hfill
+  \includegraphics[width=0.49\textwidth]{fig6_limiar_contagio.png}
+  \caption{Esquerda: desordem final em função da pressão $P$ e do número de corretores $K$. Direita: desordem final em função do peso do contágio $\beta_D$, com início limpo e sujo; a linha pontilhada marca o valor base.}
+  \label{fig:mapa}
+\end{figure}
+
+\subsection{Sensibilidade}
+A Figura~\ref{fig:sens} varia os parâmetros mais incertos para as três políticas de movimento. A correção basal dos trabalhadores $c_T$ tem o maior efeito: a desordem cai de 0,34 para 0,10 quando $c_T$ vai de $-3$ a 0. Aumentar o raio de supervisão de 1 para 5 reduz a desordem de 0,20 para 0,11, e o peso da supervisão tem efeito menor (0,20 para 0,14). As três políticas dão resultados praticamente iguais (0,157, 0,151 e 0,152 no cenário base), dentro da variação entre sementes: com 8 corretores e $r_s=3$ a supervisão já alcança cerca de 40\% da área, e a rota pouco muda quem está supervisionado.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{fig4_sensibilidade.png}
+  \caption{Sensibilidade da desordem final a $\beta_D$, $\beta_S$, $r_s$ e $c_T$, para as três políticas de movimento dos corretores.}
+  \label{fig:sens}
+\end{figure}
+
+% =====================================================================
+\section{Conclusão}
+% =====================================================================
+No modelo, os desvios não escalam por si só nem desaparecem: a desordem converge para um único patamar, determinado principalmente pela moral da equipe e pela facilidade de corrigir o que foi feito errado, e em segundo plano pela pressão e pela cobertura da supervisão. A escalada para a desordem só ocorre quando o contágio da desordem visível passa de um limiar, ou quando a moral é muito baixa. Picos temporários de pressão elevam os desvios, mas o sistema volta ao patamar anterior quando a pressão cede, o que é coerente com melhoras e pioras temporárias observadas na área.
+
+\paragraph{Pontos de alavancagem e recomendações.}
+\begin{itemize}
+  \item \textbf{Investir na moral:} treinamento, reconhecimento e feedback em campo reduzem o erro e aumentam a correção; é a alavanca de maior efeito.
+  \item \textbf{Facilitar a correção e o descarte correto:} coletores próximos, identificação clara de cada resíduo e limpeza rápida aumentam $c_T$ e atacam a sobrecarga cognitiva (causa-raiz 2).
+  \item \textbf{Ampliar o alcance da supervisão em vez da rota:} supervisão visível em uma área maior rende mais do que mudar o trajeto dos corretores.
+  \item \textbf{Manter o contágio abaixo do limiar:} não deixar desordem visível acumular evita que a norma colapse.
+\end{itemize}
+
+\paragraph{Limitações.}
+Os parâmetros vêm da literatura e não foram calibrados com dados da área. Pressão e moral são constantes em cada execução, de modo que os atrasos e os laços R2, B1, B2 e B3 do DLC não são simulados diretamente. Todo desvio é tratado como descarte incorreto de resíduo comum, sem desvios médios e graves. A grade é homogênea, sem layout da planta, turnos ou rotinas de trabalho, e as varreduras usam poucas sementes por ponto.
+
+% =====================================================================
+\section*{Declaração de uso de IA generativa}
+% =====================================================================
+O grupo usou o Claude para pesquisar literatura relacionada, para estruturar este relatório em \LaTeX{} a partir do relato do integrante, para sugerir a formulação do modelo da Seção~\ref{sec:modelo}, para revisar a consistência entre o texto e o código e para redigir uma primeira versão da Seção~5 a partir das figuras. O grupo revisou o código e os textos sugeridos e conferiu os números citados rodando \texttt{run\_model.py} e com casos extremos. A escolha da situação, o diagrama, os valores dos parâmetros e as conclusões são do grupo.
+
+{\footnotesize
+\setlength{\bibsep}{2pt}
+\bibliographystyle{plainnat}
+\bibliography{referencias}
+}
+
+\end{document}

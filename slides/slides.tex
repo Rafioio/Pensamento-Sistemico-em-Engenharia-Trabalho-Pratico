@@ -1,0 +1,389 @@
+% =====================================================================
+% ELE637 -- Pensamento Sistêmico em Engenharia -- Trabalho Prático (Grupo 3)
+% Slides no formato das aulas: Beamer, 16:9, tema Madrid em vermelho UFMG
+% =====================================================================
+\documentclass[aspectratio=169, 10pt]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{graphicx}
+% figuras próprias em figuras/; gráficos lidos direto de ../outputs (gerados por run_model.py)
+\graphicspath{{figuras/}{../outputs/}}
+\usepackage[authoryear, round]{natbib}
+
+% ---------------------------------------------------------------- tema
+\usetheme{Madrid}
+\definecolor{ufmgred}{RGB}{200,16,46}
+\definecolor{blocoazul}{RGB}{0,74,117}
+\definecolor{blocoverde}{RGB}{0,96,0}
+\usecolortheme[named=ufmgred]{structure}
+\setbeamercolor{block title}{bg=blocoazul, fg=white}
+\setbeamercolor{block body}{bg=blocoazul!10, fg=black}
+\setbeamercolor{block title example}{bg=blocoverde, fg=white}
+\setbeamercolor{block body example}{bg=blocoverde!10, fg=black}
+\setbeamercolor{block title alerted}{bg=ufmgred, fg=white}
+\setbeamercolor{block body alerted}{bg=ufmgred!10, fg=black}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+
+% fonte da figura ou do dado, no rodapé do slide (como nas aulas)
+\newcommand{\fonte}[1]{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[anchor=south west, font=\tiny, text width=0.9\paperwidth]
+      at ([xshift=4pt, yshift=12pt]current page.south west) {#1};
+  \end{tikzpicture}}
+
+% slide de seção: caixa vermelha centralizada
+\AtBeginSection[]{%
+  \begin{frame}[plain, noframenumbering]
+    \vfill\centering
+    \begin{beamercolorbox}[sep=10pt, center, rounded=true, shadow=true]{title}
+      \usebeamerfont{title}\insertsectionhead
+    \end{beamercolorbox}
+    \vfill
+  \end{frame}}
+
+% ---------------------------------------------------------------- capa
+\title[Pensamento Sistêmico em Engenharia]{Dinâmica dos desvios ambientais por falha humana}
+\subtitle{Pressão operacional, supervisão e moral coletiva}
+\author[Grupo 3]{%
+  Elias Daniel Moreira de Siqueira \and Henrique Viana Lima de Oliveira\\
+  Pedro Armando Oliveira Duarte \and Rafael Campello Soares}
+\institute[UFMG]{ELE637 -- Pensamento Sistêmico em Engenharia\\
+  Escola de Engenharia -- Universidade Federal de Minas Gerais}
+\date[Desvios ambientais]{}
+\titlegraphic{%
+  \includegraphics[height=0.9cm]{figuras/logo_ufmg.png}\hspace{6cm}%
+  \includegraphics[height=0.9cm]{figuras/logo_engenharia.png}}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Sumário}
+  \tableofcontents
+\end{frame}
+
+% =====================================================================
+\section{A situação estudada}
+% =====================================================================
+
+\begin{frame}{A situação estudada}{Desvios ambientais por falha humana}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Origem}
+        Melhoria contínua na área ambiental da Vallourec: estruturas e procedimentos para prevenir desvios causados por falha humana.
+      \end{block}
+      \begin{itemize}
+        \item \textbf{Leves:} desorganização, sujeira, lixo comum no lugar errado. Frequentes e negligenciados.
+        \item \textbf{Médios:} exigem contingência e ação corretiva.
+        \item \textbf{Graves:} vazamento químico, emissões. Multa, impacto severo, risco de embargo.
+      \end{itemize}
+      \small Desvios leves frequentes normalizam os mais sérios \citep{banja2010}.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Comportamento observado}
+        Crônico: os desvios nunca somem. Picos em períodos de maior produção, queda depois de campanhas e retorno gradual ao nível anterior.
+      \end{exampleblock}
+      \begin{alertblock}{Pergunta}
+        Como pressão, supervisão e moral interagem para que os desvios se estabilizem em nível baixo ou escalem para a desordem? Quais alavancas reduzem o erro?
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{A situação estudada}{Causas-raiz e sinais de complexidade}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Três causas-raiz (relato do integrante)}
+        \begin{enumerate}
+          \item \textbf{Pressão operacional:} sem tempo, o resíduo fica no local mais próximo.
+          \item \textbf{Complexidade:} centenas de tintas, lixas, graxas e químicos geram dúvida sobre a destinação.
+          \item \textbf{Desengajamento:} mesmo sem pressão e conhecendo a regra, há quem não se importe.
+        \end{enumerate}
+      \end{block}
+      \small\textbf{Fronteira:} dentro, trabalhadores, supervisão, pressão, moral, desordem visível e prejuízo; fora, legislação, falhas de equipamento e desvios não humanos.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Sinais de complexidade}
+        \begin{itemize}
+          \item Laços que se reforçam e que competem
+          \item Atrasos: prejuízo $\rightarrow$ reação; medida social $\rightarrow$ moral
+          \item Resistência a políticas: a medida que pressiona aumenta o erro
+          \item Não linearidade e limiar: a norma pode colapsar
+          \item Emergência: ordem ou desordem a partir de vizinhos
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% =====================================================================
+\section{Modelo conceitual}
+% =====================================================================
+
+\begin{frame}{Modelo conceitual}{Diagrama de Loop Causal}
+  \begin{columns}[c]
+    \begin{column}{0.58\textwidth}
+      \centering
+      \includegraphics[trim=160pt 235pt 160pt 50pt, clip, width=\textwidth]{figuras/diagrama_loop_causal.pdf}
+    \end{column}
+    \begin{column}{0.40\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{R1} desordem visível: ver erro por perto aumenta o erro (janelas quebradas)
+        \item \textbf{R2} resistência a políticas: medida adm.\ $\rightarrow$ pressão $\rightarrow$ desvio
+        \item \textbf{B1} supervisão: medida adm.\ reduz o desvio, com atraso
+        \item \textbf{B2} medida social: feedback e divulgação
+        \item \textbf{B3} moral: medida social $\rightarrow$ moral $\rightarrow$ menos desordem, com atraso
+      \end{itemize}
+      Traços duplos indicam atrasos.
+    \end{column}
+  \end{columns}
+  \fonte{\citet{ball2012}.}
+\end{frame}
+
+\begin{frame}{Modelo conceitual}{Arquétipo e o que entra no modelo computacional}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Soluções que falham (B1 + R2)}
+        A medida administrativa reduz o desvio só depois de um atraso. A pressão que ela gera age de imediato e realimenta o problema.\\[4pt]
+        Por isso as melhoras obtidas com medidas administrativas tendem a ser temporárias.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Recorte de curto prazo}
+        1 passo $\approx$ 1 hora; 600 passos $\approx$ algumas semanas.\\[4pt]
+        \textbf{Simulado diretamente:} R1, correção e supervisão em campo.\\[4pt]
+        \textbf{Como parâmetro:} R2, B1, B2 e B3 têm atrasos de semanas a meses. Pressão $P$ e moral $M$ ficam constantes em cada execução e variam entre execuções.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+  \fonte{\citet{meadows2022}.}
+\end{frame}
+
+% =====================================================================
+\section{Modelo computacional}
+% =====================================================================
+
+\begin{frame}{Modelo computacional}{Agentes e ambiente}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \begin{block}{Ambiente}
+        Grade $30\times30$ toroidal. Cada célula tem ou não resíduo (desordem visível). No máximo um agente por célula.
+      \end{block}
+      \begin{itemize}
+        \item \textbf{120 trabalhadores:} andam ao acaso, erram e corrigem.
+        \item \textbf{8 corretores:} erram menos, corrigem mais e reduzem o erro de quem está a até $r_s=3$ células.
+        \item \textbf{Moral individual} $M_i \sim \mathcal{N}(0{,}5;\,0{,}25^2)$, fixa: moral baixa = causa-raiz 3.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Políticas de ronda dos corretores}
+        \begin{itemize}
+          \item \textbf{Aleatória:} sem informação (base)
+          \item \textbf{Reativa:} vai para onde há mais resíduo
+          \item \textbf{Cobertura:} se afasta dos outros corretores
+        \end{itemize}
+      \end{exampleblock}
+      \small Por que ABM: o erro se espalha entre vizinhos, a posição importa e a moral varia de pessoa para pessoa.
+    \end{column}
+  \end{columns}
+  \fonte{\citet{rangoni2017}; \citet{savarimuthu2008}.}
+\end{frame}
+
+\begin{frame}{Modelo computacional}{Regras}
+  \begin{block}{Probabilidade de erro (trabalhador)}
+    \vspace{-8pt}
+    \[
+      p^{\text{erro}}_i=\sigma\!\left(b_T+\beta_P P+\beta_D D_i(t)-\beta_S S_i(t)-\beta_M M_i\right),
+      \qquad \sigma(x)=\frac{1}{1+e^{-x}}
+    \]
+    \vspace{-10pt}
+  \end{block}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Correção}
+        \vspace{-8pt}
+        \[ p^{\text{corr}}_i=\sigma\!\left(c+\gamma\, M_i\right) \]
+        \vspace{-12pt}
+      \end{block}
+      \small
+      $D_i$: fração das 8 vizinhas com resíduo.\\
+      $S_i=1$ se há corretor a distância $\le r_s$.\\
+      Corretor: mesma forma, sem o termo $S_i$.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Cada passo}
+        \begin{enumerate}
+          \item Percepção de $D_i$ e $S_i$
+          \item Erro: resíduo na própria célula
+          \item Correção (se erra e corrige, o erro prevalece)
+          \item Movimento, em ordem sorteada
+        \end{enumerate}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Modelo computacional}{Parâmetros ancorados na literatura}
+  \centering\small
+  \begin{tabular}{@{}llp{8.2cm}@{}}
+    \toprule
+    Parâmetro & Base & Ancoragem \\
+    \midrule
+    $b_T$, $b_A$ (erro basal) & $-2{,}0$; $-3{,}0$ & erro de 2--10\% em tarefa rotineira \citep{kirwan1994} \\
+    $\beta_P$ (pressão) & 1,2 & efeito pequeno a moderado \citep{szalma2008} \\
+    $\beta_D$ (contágio) & 1,4 & desordem dobra o descarte indevido \citep{keizer2008} \\
+    $\beta_S$ (supervisão) & 1,0 & observador visível triplica a conformidade \citep{srigley2014} \\
+    $\beta_M$ (moral) & 2,0 & clima de segurança prediz conformidade \citep{christian2009} \\
+    $c_T$, $c_A$ (correção) & $-1{,}5$; $1{,}0$ & corretores têm papel explícito de limpeza \citep{rangoni2017} \\
+    \bottomrule
+  \end{tabular}\\[8pt]
+  Com $P=M=0{,}5$: trabalhador erra 8\% e corrige 50\%; corretor erra 2,4\% e corrige 88\%.
+\end{frame}
+
+% =====================================================================
+\section{Simulação e análise}
+% =====================================================================
+
+\begin{frame}{Simulação e análise}{Cenário base}
+  \centering
+  \includegraphics[width=0.78\textwidth]{fig1_cenario_base.png}\\[4pt]
+  \small A desordem sobe nos primeiros 50 passos e oscila em torno de \textbf{0,16}; cerca de 9\% dos trabalhadores erram a cada passo.\\
+  Mesmo padrão observado na área: os desvios nunca somem e não explodem.
+  \fonte{Média $\pm$ desvio de 10 sementes.}
+\end{frame}
+
+\begin{frame}{Simulação e análise}{Valores extremos e choque de pressão}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{fig2_extremos.png}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{fig5_choque_pressao.png}
+    \end{column}
+  \end{columns}
+  \vspace{4pt}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    & moral 1 & $P=0$ & base & $K=0$ & $P=1$ & moral 0 \\
+    \midrule
+    desordem final & 0,03 & 0,09 & 0,16 & 0,22 & 0,28 & 0,64 \\
+    \bottomrule
+  \end{tabular}\hfill
+  \begin{minipage}{0.33\textwidth}
+    Choque $P=1$ por 50 passos: pico 0,28 e volta ao base. Sem efeito permanente.
+  \end{minipage}
+\end{frame}
+
+\begin{frame}{Simulação e análise}{Existe ponto de virada?}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering
+      \includegraphics[width=0.95\textwidth]{fig3_mapa_PK.png}\\
+      \small Variação gradual: de 0,07 ($P=0$, $K=16$) a 0,38 ($P=1$, $K=0$).
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \includegraphics[width=0.95\textwidth]{fig6_limiar_contagio.png}\\
+      \small Início limpo e sujo coincidem: \textbf{um único equilíbrio}. Mas entre $\beta_D=2{,}8$ e $5$ a desordem salta de 0,23 para 0,74.
+    \end{column}
+  \end{columns}
+  \vspace{4pt}
+  \begin{alertblock}{}
+    \centering O limiar está no contágio (R1): quando ele domina a correção, a norma colapsa.
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{Simulação e análise}{Sensibilidade e políticas de ronda}
+  \centering
+  \includegraphics[width=\textwidth]{fig4_sensibilidade.png}\\[4pt]
+  \small
+  \begin{itemize}
+    \item $c_T$ (correção basal) tem o maior efeito: 0,34 $\rightarrow$ 0,10.
+    \item Raio de supervisão $r_s$ de 1 a 5: 0,20 $\rightarrow$ 0,11.
+    \item As três políticas dão 0,157, 0,151 e 0,152: com $r_s=3$ a supervisão já cobre $\approx$40\% da área.
+  \end{itemize}
+\end{frame}
+
+% =====================================================================
+\section{Conclusão}
+% =====================================================================
+
+\begin{frame}{Conclusão}{Resposta à pergunta e alavancas}
+  \begin{block}{Resposta}
+    Os desvios convergem para um único patamar, que nunca chega a zero. Moral e facilidade de corrigir pesam mais do que pressão e supervisão. A escalada só ocorre com moral muito baixa ou contágio acima do limiar.
+  \end{block}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Alavancas}
+        \begin{enumerate}
+          \item \textbf{Moral:} treinamento, reconhecimento e feedback
+          \item \textbf{Facilitar a correção:} coletores próximos e identificação clara do resíduo
+          \item \textbf{Alcance da supervisão}, mais do que a rota
+          \item \textbf{Não deixar desordem acumular}, para ficar abaixo do limiar
+        \end{enumerate}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{O que não funcionou como alavanca}
+        \begin{itemize}
+          \item Mudar a rota dos corretores: as três políticas dão o mesmo resultado
+          \item Picos de pressão: o efeito some quando a pressão cede
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Conclusão}{Limitações e próximos passos}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitações}
+        \begin{itemize}
+          \item Parâmetros da literatura, sem calibração com dados da área
+          \item $P$ e $M$ constantes em cada execução
+          \item Só descarte de resíduo comum; sem desvios médios e graves
+          \item Grade homogênea, sem layout, turnos ou rotinas
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Próximos passos}
+        \begin{itemize}
+          \item Tornar $P$ e $M$ variáveis no tempo, com os atrasos de R2, B1, B2 e B3
+          \item Calibrar com registros de desvios da área
+          \item Incluir layout da planta e desvios de maior gravidade
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[plain]
+  \vfill\centering
+  \begin{beamercolorbox}[sep=10pt, center, rounded=true, shadow=true]{title}
+    \usebeamerfont{title}Obrigado!\\[2pt]
+    \usebeamerfont{subtitle}Código: \texttt{github.com/Rafioio/Pensamento-Sistemico-em-Engenharia-Trabalho-Pratico}
+  \end{beamercolorbox}
+  \vfill
+\end{frame}
+
+\begin{frame}{Referências}
+  \tiny
+  \bibliographystyle{plainnat}
+  \bibliography{../relatorio/referencias}
+\end{frame}
+
+\end{document}

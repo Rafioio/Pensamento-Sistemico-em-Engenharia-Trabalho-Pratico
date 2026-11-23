@@ -397,6 +397,25 @@ def fig_choque():
     fig.savefig(os.path.join(OUTPUT_DIR, "fig5_choque_pressao.png"), dpi=200)
 
 
+
+# ---------------------------------------------------------------- Figura 6: limiar do contágio
+def fig_limiar():
+    """Desordem final em função do peso do contágio, partindo da grade limpa e da grade suja.
+    Se as duas curvas se separassem, haveria dois equilíbrios (histerese)."""
+    valores = [0.0, 1.0, 1.4, 2.0, 2.8, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0]
+    fig, ax = plt.subplots(figsize=(6.5, 4))
+    for init, rot, mk in ((0.0, "início limpo (init = 0)", "o-"), (0.7, "início sujo (init = 0,7)", "s--")):
+        y = [final(replace(BASE, bDT=v, bDA=v, init=init), 4) for v in valores]
+        ax.plot(valores, y, mk, label=rot)
+        print(f"Limiar init={init}: " + ", ".join(f"{v}->{d:.3f}" for v, d in zip(valores, y)))
+    ax.axvline(BASE.bDT, color="grey", ls=":", lw=1)
+    ax.set(xlabel="peso do contágio $\\beta_D$", ylabel="desordem final",
+           title="Limiar do contágio da desordem")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUTPUT_DIR, "fig6_limiar_contagio.png"), dpi=200)
+
+
 if __name__ == "__main__":
     fig_cenario_base()
     fig_extremos()

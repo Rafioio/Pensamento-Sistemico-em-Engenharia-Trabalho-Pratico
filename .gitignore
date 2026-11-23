@@ -287,3 +287,21 @@ __marimo__/
 persistencia/*
 !persistencia/.gitkeep
 
+
+# =========================
+# LATEX (relatorio/ e slides/)
+# =========================
+*.aux
+*.bbl
+*.blg
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+relatorio/*.pdf
+slides/*.pdf
