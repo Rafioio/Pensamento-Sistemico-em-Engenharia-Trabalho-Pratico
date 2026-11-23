@@ -175,6 +175,43 @@ def test_integracao_simular_moral_dinamica():
     print(f"✓ Simulação com moral dinâmica executada! Moral inicial/final: {serie_moral[0]:.4f} / {serie_moral[-1]:.4f}")
 
 
+def test_queda_moral_individual_ao_criar_erro():
+    """Valida que quando um agente comete um erro, sua moral individual cai em YErro."""
+    print("\n[5] Testando efeito YErro (queda de moral individual do agente que erra)...")
+
+    from dataclasses import replace
+
+    par_sem_queda = replace(
+        BASE,
+        T=1,
+        seed=42,
+        YErro=0.0,
+    )
+    res_sem_queda = simular(par_sem_queda, salvar=False)
+
+    par_com_queda = replace(
+        BASE,
+        T=1,
+        seed=42,
+        YErro=0.15,
+    )
+    res_com_queda = simular(par_com_queda, salvar=False)
+
+    # Identifica que quando YErro > 0, a moral dos agentes que erraram é estritamente menor
+    M_sem = res_sem_queda["M"]
+    M_com = res_com_queda["M"]
+    assert np.mean(M_com) < np.mean(M_sem), "A moral média deveria ser menor devido à penalização YErro"
+
+    # Validação de valor inválido
+    try:
+        replace(BASE, YErro=-0.05)
+        assert False, "Deveria lançar ValueError para YErro < 0"
+    except ValueError as e:
+        assert "YErro" in str(e)
+
+    print("✓ Efeito YErro validado com sucesso na simulação!")
+
+
 def main():
     print("=" * 60)
     print(" SUITE DE TESTES: DINÂMICA DE MORAL COM DELAYS")
@@ -183,9 +220,11 @@ def main():
     test_aumento_moral_exatamente_y_ticks_depois()
     test_propagacao_delta_liquido_para_agentes()
     test_integracao_simular_moral_dinamica()
+    test_queda_moral_individual_ao_criar_erro()
     print("\n" + "=" * 60)
     print(" TODOS OS TESTES DE MORAL PASSARAM COM SUCESSO!")
     print("=" * 60)
+
 
 
 if __name__ == "__main__":

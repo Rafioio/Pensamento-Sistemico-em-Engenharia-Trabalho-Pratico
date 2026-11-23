@@ -58,6 +58,7 @@ class Params:
     x: float = 0.01              # ganho na moral média por CD (impacto_cd > 0)
     y: int = 10                  # atraso em ticks para efeito do CD (tempo_moral > 0)
     z_moral: float = 0.0         # influência externa contínua sobre a moral
+    YErro: float = 0.0           # redução da moral individual do agente ao cometer erro (>= 0)
 
     def __post_init__(self):
         # Validação obrigatória da dinâmica de pressão: 0 < a < c < b
@@ -77,6 +78,9 @@ class Params:
             raise ValueError(f"x (impacto_cd) deve ser > 0, obtido {self.x}")
         if self.y <= 0:
             raise ValueError(f"y (tempo_moral) deve ser > 0, obtido {self.y}")
+        if self.YErro < 0:
+            raise ValueError(f"YErro deve ser >= 0, obtido {self.YErro}")
+
 
         # Sincroniza moral_inicial e M_bar se um deles foi alterado
         if self.moral_inicial != 0.5 and self.M_bar == 0.5:

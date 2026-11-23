@@ -142,7 +142,12 @@ def simular(
         total_erros_criados += criados_passo
         total_erros_eliminados += eliminados_passo
 
+        # Redução da moral individual do agente que cometeu erro (efeito YErro)
+        if par.YErro > 0 and criados_passo > 0:
+            M[err] = np.clip(M[err] - par.YErro, 0.0, 1.0)
+
         # Gatilhos de eventos com atraso (delays):
+
         # 1. Quando novo erro nasce: agenda 3 eventos de resposta administrativa na fila de pressão
         if par.pressao_dinamica and criados_passo > 0:
             din_pressao.agendar_resposta_erro(criados_passo)

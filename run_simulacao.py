@@ -29,8 +29,8 @@ def parse_args() -> argparse.Namespace:
         "--seeds",
         type=int,
         nargs="+",
-        default=[0, 1, 2],
-        help="Sementes aleatórias para execução das simulações (padrão: 0 1 2).",
+        default=[0, 1, 2, 3, 4, 5],
+        help="Sementes aleatórias para execução das simulações (padrão: 0 1 2 3 4 5).",
     )
     parser.add_argument(
         "--passos",
@@ -149,10 +149,18 @@ def parse_args() -> argparse.Namespace:
         help="Influência externa contínua por ciclo sobre a moral.",
     )
     parser.add_argument(
+        "--yerro",
+        type=float,
+        default=None,
+        dest="yerro",
+        help="Redução da moral individual do agente quando comete erro (YErro >= 0).",
+    )
+    parser.add_argument(
         "--salvar-csv",
         action="store_true",
         help="Se informado, também salva um arquivo CSV com a série temporal por execução.",
     )
+
 
     parser.add_argument(
         "--sem-salvar",
@@ -212,9 +220,12 @@ def main() -> None:
         alteracoes["y"] = args.tempo_moral
     if args.z_moral is not None:
         alteracoes["z_moral"] = args.z_moral
+    if args.yerro is not None:
+        alteracoes["YErro"] = args.yerro
 
     if alteracoes:
         par = replace(par, **alteracoes)
+
 
     salvar = not args.sem_salvar
     dir_saida = Path(args.dir_saida) if args.dir_saida else PERSISTENCIA_DIR
